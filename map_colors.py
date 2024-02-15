@@ -23,6 +23,5 @@ def map_colors(color_mapping, base_preset, scheme):
                 a = color["opacity"]
                 added_color = ColorTransformer.rgba_to_argb(r,g,b,a)
                 total_color = ColorUtils.blend_argb(total_color, added_color)
-                print("starting color: " + str(total_color) + "end color " + str(added_color))
             base_preset["variables"][key] = ColorTransformer.argb_to_hex(total_color)
     return base_preset
