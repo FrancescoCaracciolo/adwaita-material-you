@@ -1,6 +1,7 @@
 from os.path import expanduser
 import subprocess, os
 from threading import Thread
+import threading
 from map_colors import map_colors
 from material_color_utilities_python.utils.theme_utils import *
 from PIL import Image
@@ -65,6 +66,34 @@ def change_arcmenu_theme(vars):
     set_setting("menu-item-hover-bg-color", "\\" + vars["accent_bg_color"], ARCMENU_SCHEMA, uuid=ARCMENU_UUID)
     set_setting("menu-item-hover-fg-color", "\\" + vars["accent_fg_color"], ARCMENU_SCHEMA, uuid=ARCMENU_UUID)
 
+def apply_gtk_theme(base_preset):
+    # Generate css
+    css = ""
+    for key in base_preset["variables"]:
+        css +=  "@define-color " + key + " " + base_preset["variables"][key] + ";\n"
+    for prefix_key in base_preset["palette"]:
+        for key_2 in base_preset["palette"][prefix_key]:
+            css += "@define-color " + prefix_key + key_2 + " " + base_preset["palette"][prefix_key][key_2] + ";\n"
+    f = open(os.path.expanduser("~/.config/gtk-4.0/gtk.css"), "w+")
+    f.write(css)
+    f.close()
+    f = open(os.path.expanduser("~/.config/gtk-3.0/gtk.css"), "w+")
+    f.write(css)
+    f.close()
+    print("Theme applied")
+    open(os.path.expanduser("~/.config/gtk-4.0/.materialyou"), "w+").close()
+ 
+
+def apply_gnome_theme(base_preset):
+    # Generate gnome shell theme 
+    modify_colors(expanduser(EXTENSIONDIR + "/shell/" + str(VERSION) + "/gnome-shell-sass/_colors.txt"), expanduser(EXTENSIONDIR + "/shell/" + str(VERSION) + "/gnome-shell-sass/_colors.scss"), base_preset["variables"])
+    modify_colors(expanduser(EXTENSIONDIR + "/shell/" + str(VERSION) + "/gnome-shell-sass/_default-colors.txt"), expanduser(EXTENSIONDIR + "/shell/" + str(VERSION) + "/gnome-shell-sass/_default-colors.scss"), base_preset["variables"])
+    if not os.path.exists(expanduser("~/.local/share/themes/MaterialYou")):
+        os.makedirs(expanduser("~/.local/share/themes/MaterialYou"))
+        os.makedirs(expanduser("~/.local/share/themes/MaterialYou/gnome-shell"))
+    compile_sass(expanduser(EXTENSIONDIR+ "/shell/" + str(VERSION) + "/gnome-shell.scss"), expanduser("~/.local/share/themes/MaterialYou/gnome-shell/gnome-shell.css"))
+    set_setting("name", "reset", "org.gnome.shell.extensions.user-theme")
+
 def apply_theme():
     color_scheme = get_ext_settings("scheme")
     accent_color_enabled = parse_bool(get_ext_settings("enable-accent-colors"))
@@ -103,32 +132,11 @@ def apply_theme():
     variant = color_scheme.lower()
     scheme = "light" if not is_dark else "dark"
     base_preset = map_colors(color_mappings[variant][scheme], base_presets[scheme], theme["schemes"][scheme].props)
-    
-    # Generate css
-    css = ""
-    for key in base_preset["variables"]:
-        css +=  "@define-color " + key + " " + base_preset["variables"][key] + ";\n"
-    for prefix_key in base_preset["palette"]:
-        for key_2 in base_preset["palette"][prefix_key]:
-            css += "@define-color " + prefix_key + key_2 + " " + base_preset["palette"][prefix_key][key_2] + ";\n"
-    f = open(os.path.expanduser("~/.config/gtk-4.0/gtk.css"), "w+")
-    f.write(css)
-    f.close()
-    f = open(os.path.expanduser("~/.config/gtk-3.0/gtk.css"), "w+")
-    f.write(css)
-    f.close()
-    print("Theme applied")
-    open(os.path.expanduser("~/.config/gtk-4.0/.materialyou"), "w+").close()
-    # Generate gnome shell theme 
-    modify_colors(expanduser(EXTENSIONDIR + "/shell/" + str(VERSION) + "/gnome-shell-sass/_colors.txt"), expanduser(EXTENSIONDIR + "/shell/" + str(VERSION) + "/gnome-shell-sass/_colors.scss"), base_preset["variables"])
-    modify_colors(expanduser(EXTENSIONDIR + "/shell/" + str(VERSION) + "/gnome-shell-sass/_default-colors.txt"), expanduser(EXTENSIONDIR + "/shell/" + str(VERSION) + "/gnome-shell-sass/_default-colors.scss"), base_preset["variables"])
-    if not os.path.exists(expanduser("~/.local/share/themes/MaterialYou")):
-        os.makedirs(expanduser("~/.local/share/themes/MaterialYou"))
-        os.makedirs(expanduser("~/.local/share/themes/MaterialYou/gnome-shell"))
-    compile_sass(expanduser(EXTENSIONDIR+ "/shell/" + str(VERSION) + "/gnome-shell.scss"), expanduser("~/.local/share/themes/MaterialYou/gnome-shell/gnome-shell.css"))
-    set_setting("name", "reset", "org.gnome.shell.extensions.user-theme")
+
+    threading.Thread(target=apply_gtk_theme, args=(base_preset, )).start()
+    threading.Thread(target=apply_gnome_theme, args=(base_preset, )).start() 
     if enable_arcmenu_theming:
-        change_arcmenu_theme(base_preset["variables"])
+        threading.Thread(target=change_arcmenu_theme, args=(base_preset["variables"],)).start()
     if enable_pywal_theming:
         generate_pywal(base_preset["variables"]["window_bg_color"], wall_path, is_dark)
     if extra_command:
