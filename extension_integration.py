@@ -1,12 +1,19 @@
 from os.path import expanduser
 import subprocess, os
+from threading import Thread
 from map_colors import map_colors
 from material_color_utilities_python.utils.theme_utils import *
 from PIL import Image
+
+ARCMENU_UUID = "arcmenu@arcmenu.com"
+ARCMENU_SCHEMA = "org.gnome.shell.extensions.arcmenu"
 EXTENSION_UUID = "material-you-colors@francescocaracciolo.github.io"
 EXTENSIONDIR = "~/.local/share/gnome-shell/extensions/" + EXTENSION_UUID
 EXTENSION_SCHEMA = "org.gnome.shell.extensions.material-you-colors"
 VERSION = 47 
+
+def generate_pywal(background, image, is_dark):
+    subprocess.Popen(["wal", "-b", background, "-i", image, "-nqe" if is_dark else "-nqel"])
 
 def execute_command(command):
     try:
@@ -28,7 +35,7 @@ def get_setting(key, schema, uuid = None):
 
 def set_setting(key, value, schema, uuid = None):
     if uuid is not None:
-        command  = "gsettings --schemadir ~/.local/share/gnome-shell/extensions/" + EXTENSION_UUID + "/schemas set " + EXTENSION_SCHEMA + " " + key + " " + value
+        command  = "gsettings --schemadir ~/.local/share/gnome-shell/extensions/" + uuid + "/schemas set " + schema + " " + key + " " + value
     else:
         command  = "gsettings set " + schema + " " + key + " " + value
     execute_command(command)
@@ -46,6 +53,17 @@ def modify_colors(scss_path, output_path, vars):
 
 def compile_sass(scss_path, output_path):
     execute_command("sass " + scss_path + " " + output_path)
+
+
+def change_arcmenu_theme(vars):
+    set_setting("override-menu-theme", "true", ARCMENU_SCHEMA, uuid=ARCMENU_UUID)
+    set_setting("menu-background-color", "\\" + vars["headerbar_bg_color"], ARCMENU_SCHEMA, uuid=ARCMENU_UUID)
+    #set_setting("menu-border-color", "rgb(60, 60, 60)", ARCMENU_SCHEMA, uuid=ARCMENU_UUID)
+    set_setting("menu-foreground-color", "\\" + vars["headerbar_fg_color"], ARCMENU_SCHEMA, uuid=ARCMENU_UUID)
+    set_setting("menu-item-active-bg-color", "\\" + vars["accent_bg_color"], ARCMENU_SCHEMA, uuid=ARCMENU_UUID)
+    set_setting("menu-item-active-fg-color", "\\" + vars["accent_fg_color"], ARCMENU_SCHEMA, uuid=ARCMENU_UUID)
+    set_setting("menu-item-hover-bg-color", "\\" + vars["accent_bg_color"], ARCMENU_SCHEMA, uuid=ARCMENU_UUID)
+    set_setting("menu-item-hover-fg-color", "\\" + vars["accent_fg_color"], ARCMENU_SCHEMA, uuid=ARCMENU_UUID)
 
 def apply_theme():
     color_scheme = get_ext_settings("scheme")
@@ -109,6 +127,11 @@ def apply_theme():
         os.makedirs(expanduser("~/.local/share/themes/MaterialYou/gnome-shell"))
     compile_sass(expanduser(EXTENSIONDIR+ "/shell/" + str(VERSION) + "/gnome-shell.scss"), expanduser("~/.local/share/themes/MaterialYou/gnome-shell/gnome-shell.css"))
     set_setting("name", "reset", "org.gnome.shell.extensions.user-theme")
-
+    if enable_arcmenu_theming:
+        change_arcmenu_theme(base_preset["variables"])
+    if enable_pywal_theming:
+        generate_pywal(base_preset["variables"]["window_bg_color"], wall_path, is_dark)
+    if extra_command:
+       Thread(target=execute_command, args=(extra_command,)).start() 
 
 apply_theme()
