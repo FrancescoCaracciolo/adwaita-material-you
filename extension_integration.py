@@ -183,7 +183,7 @@ def apply_theme(accent_color_applied = False):
 
 if __name__ == "__main__":
     # Check if the argument given is true
-    if sys.argv[1] == "true":
+    if len(sys.argv) > 1 and sys.argv[1] == "true":
         accent_color_applied = True 
     else:
         accent_color_applied = False
