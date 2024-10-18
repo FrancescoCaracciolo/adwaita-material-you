@@ -1,5 +1,5 @@
 from os.path import expanduser
-import subprocess, os
+import subprocess, os, sys
 from threading import Thread
 import threading
 from map_colors import map_colors
@@ -12,6 +12,35 @@ EXTENSION_UUID = "material-you-colors@francescocaracciolo.github.io"
 EXTENSIONDIR = "~/.local/share/gnome-shell/extensions/" + EXTENSION_UUID
 EXTENSION_SCHEMA = "org.gnome.shell.extensions.material-you-colors"
 VERSION = 47 
+
+COLOR_TO_ACCENT = {
+  0xffbc9769: "orange",
+  0xffdafaef: "green",
+  0xffdcabcc: "pink",
+  0xffd1e1f8: "teal",
+  0xff7d916e: "green",
+  0xff4285f4: "blue",
+  0xffb18c84: "red",
+  0xff7ca7a5: "green",
+  0xffb7b4cf: "purple",
+  0xffb0b78e: "green",
+  0xff8e7596: "pink",
+  0xff9bb8a8: "green",
+  0xfff0eab7: "yellow",
+}
+
+ACCENT_TO_COLOR = {
+  "orange": "#643f00",
+  "green": "#005142",
+  "pink": "#722b65",
+  "teal": "#00497e",
+  "blue": "#004397",
+  "red": "#7c2c1b",
+  "purple": "#403c8e",
+  "yellow": "#4e4800",
+};
+COLORS = {"#643f00": 0xffbc9769, "#005142": 0xffdafaef, "#722b65": 0xffdcabcc, "#00497e": 0xffd1e1f8, "#225104": 0xff7d916e, "#004397": 0xff4285f4, "#7c2c1b": 0xffb18c84, "#00504e": 0xff7ca7a5, "#403c8e": 0xffb7b4cf, "#3d4c00": 0xffb0b78e, "#64307c ": 0xff8e7596, "#005137 ": 0xff9bb8a8, "#4e4800": 0xfff0eab7};
+
 
 def generate_pywal(background, image, is_dark):
     subprocess.Popen(["wal", "-b", background, "-i", image, "-nqe" if is_dark else "-nqel"])
@@ -96,7 +125,7 @@ def apply_gnome_theme(base_preset):
     compile_sass(expanduser(EXTENSIONDIR+ "/shell/" + str(VERSION) + "/gnome-shell.scss"), expanduser("~/.local/share/themes/MaterialYou/gnome-shell/gnome-shell.css"))
     set_setting("name", "reset", "org.gnome.shell.extensions.user-theme")
 
-def apply_theme():
+def apply_theme(accent_color_applied = False):
     color_scheme = get_ext_settings("scheme")
     accent_color_enabled = parse_bool(get_ext_settings("enable-accent-colors"))
     accent_color = get_ext_settings("accent-color")
@@ -111,9 +140,17 @@ def apply_theme():
 
     wall_uri_type = "-dark" if is_dark else ""
     wall_path = get_setting("picture-uri" + wall_uri_type, "org.gnome.desktop.background").lstrip("file://")
+    
+    if accent_color_applied:
+        accent = get_setting("accent-color", "org.gnome.desktop.interface")
+        accent_color = COLORS[ACCENT_TO_COLOR[accent]]
+        set_setting("accent-color", accent_color, EXTENSION_SCHEMA, uuid=EXTENSION_UUID)
+
     # Generate theme
     if accent_color_enabled:
         theme = themeFromSourceColor(int(accent_color))
+        if accent_color in COLOR_TO_ACCENT and not accent_color_applied:
+            set_setting("accent-color", COLOR_TO_ACCENT[accent_color], 'org.gnome.desktop.interface')
     else:
         theme = themeFromImage(Image.open(wall_path))
     
@@ -144,4 +181,10 @@ def apply_theme():
     if extra_command:
        Thread(target=execute_command, args=(extra_command,)).start() 
 
-apply_theme()
+if __name__ == "__main__":
+    # Check if the argument given is true
+    if sys.argv[1] == "true":
+        accent_color_applied = True 
+    else:
+        accent_color_applied = False
+    apply_theme(accent_color_applied)
