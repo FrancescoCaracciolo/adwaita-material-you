@@ -5,7 +5,6 @@ import threading
 from map_colors import map_colors
 from material_color_utilities_python.utils.theme_utils import *
 from PIL import Image
-import urllib.parse
 
 ARCMENU_UUID = "arcmenu@arcmenu.com"
 ARCMENU_SCHEMA = "org.gnome.shell.extensions.arcmenu"
@@ -82,7 +81,9 @@ def apply_gtk_theme(base_preset):
     f.write(css)
     f.close()
     print("Theme applied")
-    open(os.path.expanduser("~/.config/gtk-4.0/.materialyou"), "w+").close()
+    f = open(os.path.expanduser("~/.config/gtk-4.0/.materialyou"), "w+")
+    f.write("yes")
+    f.close()
  
 
 def apply_gnome_theme(base_preset):
@@ -109,13 +110,12 @@ def apply_theme():
     is_dark = dark_pref == "prefer-dark"
 
     wall_uri_type = "-dark" if is_dark else ""
-    wall_path = get_setting("picture-uri" + wall_uri_type, "org.gnome.desktop.background").replace("file://", "")
-    wall_path = urllib.parse.unquote(wall_path)
+    wall_path = get_setting("picture-uri" + wall_uri_type, "org.gnome.desktop.background").lstrip("file://")
     # Generate theme
     if accent_color_enabled:
         theme = themeFromSourceColor(int(accent_color))
     else:
-        theme = themeFromImage(Image.open(wall_path).resize((int(width), int(height))))[0]
+        theme = themeFromImage(Image.open(wall_path))
     
     # Map colors
     cmfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "color_mappings.json")
