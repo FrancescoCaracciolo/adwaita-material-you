@@ -43,7 +43,18 @@ ACCENT_TO_COLOR = {
   "yellow": "#4e4800",
 };
 COLORS = {"#643f00": 0xffbc9769, "#005142": 0xffdafaef, "#722b65": 0xffdcabcc, "#00497e": 0xffd1e1f8, "#225104": 0xff7d916e, "#004397": 0xff4285f4, "#7c2c1b": 0xffb18c84, "#00504e": 0xff7ca7a5, "#403c8e": 0xffb7b4cf, "#3d4c00": 0xffb0b78e, "#64307c ": 0xff8e7596, "#005137 ": 0xff9bb8a8, "#4e4800": 0xfff0eab7};
-
+ 
+def calculate_optimal_size (width: int, height: int, bitmap_size: int) -> (int, int):
+    image_area = width * height;
+    bitmap_area = bitmap_size ** 2
+    scale = math.sqrt(bitmap_area/image_area) if image_area > bitmap_area else 1
+    new_width = round(width * scale)
+    new_height = round(height * scale)
+    if new_width == 0:
+        new_width = 1
+    if new_height == 0:
+        new_height = 1
+    return new_width, new_height
 
 def generate_pywal(background, image, is_dark):
     subprocess.Popen(["wal", "-b", background, "-i", image, "-nqe" if is_dark else "-nqel"])
@@ -117,21 +128,27 @@ def apply_gtk_theme(base_preset):
     f.write("yes")
     f.close()
  
-def theme_from_color_2(accent_color):
-        from materialyoucolor.scheme import Scheme
+def theme_from_color_2(accent_color, isdark):
+    print(hexFromArgb(accent_color))
+    from materialyoucolor.scheme import Scheme
+    if isdark:
         sch = Scheme.dark(int(accent_color)).__dict__["props"]
-        generated = {}
-        for key, color in sch.items():
-            generated[key] = ColorUtils.argb_from_argb_arr(color[0], color[1], color[2], color[3])
-        theme = {"schemes": {"dark": Scheme(generated), "light": Scheme(generated)}}
-        return theme
+    else:
+        sch = Scheme.light(int(accent_color)).__dict__["props"]
+    generated = {}
+    for key, color in sch.items():
+        generated[key] = ColorUtils.argb_from_argb_arr(color[0], color[1], color[2], color[3])
+    theme = {"schemes": {"dark": Scheme(generated), "light": Scheme(generated)}}
+    for name, color in theme["schemes"]["light"].props.items():
+        print(name + ": " + hexFromArgb(color))
+    return theme
 
-def theme_from_image_2(image, w, h):
+def theme_from_image_2(image, w, h, isdark):
     from materialyoucolor.quantize import QuantizeCelebi
     from materialyoucolor.score.score import Score
-    image.resize((w,h), Image.Resampling.BICUBIC)
+    image.resize(calculate_optimal_size(image.height, image.width, 128), Image.Resampling.BICUBIC)
     result = QuantizeCelebi(list(image.getdata()), 128)
-    return theme_from_color_2(Score.score(result)[0])
+    return theme_from_color_2(Score.score(result)[0], isdark)
 
 def apply_gnome_theme(base_preset):
     # Generate gnome shell theme 
@@ -169,14 +186,14 @@ def apply_theme(accent_color_applied = False):
     # Generate theme
     if accent_color_enabled:
         if MU_BACKEND:
-            theme = theme_from_color_2(accent_color)
+            theme = theme_from_color_2(accent_color, is_dark)
         else:
             theme = themeFromSourceColor(int(accent_color))
         if accent_color in COLOR_TO_ACCENT and not accent_color_applied:
             set_setting("accent-color", COLOR_TO_ACCENT[accent_color], 'org.gnome.desktop.interface')
     else:
         if MU_BACKEND:
-            theme = theme_from_image_2(Image.open(wall_path), int(width), int(height))
+            theme = theme_from_image_2(Image.open(wall_path), int(width), int(height), is_dark)
         else:
             theme = themeFromImage(Image.open(wall_path))
     
@@ -197,6 +214,7 @@ def apply_theme(accent_color_applied = False):
     variant = color_scheme.lower()
     scheme = "light" if not is_dark else "dark"
     base_preset = map_colors(color_mappings[variant][scheme], base_presets[scheme], theme["schemes"][scheme].props)
+    print(base_preset)
 
     threading.Thread(target=apply_gtk_theme, args=(base_preset, )).start()
     threading.Thread(target=apply_gnome_theme, args=(base_preset, )).start() 
