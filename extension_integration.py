@@ -3,9 +3,12 @@ import subprocess, os, sys
 from threading import Thread
 import threading
 from map_colors import map_colors
+from color_utils import ColorUtils
 from material_color_utilities_python.utils.theme_utils import *
 from PIL import Image
+import urllib.parse
 
+MU_BACKEND = True
 ARCMENU_UUID = "arcmenu@arcmenu.com"
 ARCMENU_SCHEMA = "org.gnome.shell.extensions.arcmenu"
 EXTENSION_UUID = "material-you-colors@francescocaracciolo.github.io"
@@ -114,6 +117,21 @@ def apply_gtk_theme(base_preset):
     f.write("yes")
     f.close()
  
+def theme_from_color_2(accent_color):
+        from materialyoucolor.scheme import Scheme
+        sch = Scheme.dark(int(accent_color)).__dict__["props"]
+        generated = {}
+        for key, color in sch.items():
+            generated[key] = ColorUtils.argb_from_argb_arr(color[0], color[1], color[2], color[3])
+        theme = {"schemes": {"dark": Scheme(generated), "light": Scheme(generated)}}
+        return theme
+
+def theme_from_image_2(image, w, h):
+    from materialyoucolor.quantize import QuantizeCelebi
+    from materialyoucolor.score.score import Score
+    image.resize((w,h), Image.Resampling.BICUBIC)
+    result = QuantizeCelebi(list(image.getdata()), 128)
+    return theme_from_color_2(Score.score(result)[0])
 
 def apply_gnome_theme(base_preset):
     # Generate gnome shell theme 
@@ -126,6 +144,7 @@ def apply_gnome_theme(base_preset):
     set_setting("name", "reset", "org.gnome.shell.extensions.user-theme")
 
 def apply_theme(accent_color_applied = False):
+    # Get extension settings
     color_scheme = get_ext_settings("scheme")
     accent_color_enabled = parse_bool(get_ext_settings("enable-accent-colors"))
     accent_color = get_ext_settings("accent-color")
@@ -140,7 +159,8 @@ def apply_theme(accent_color_applied = False):
 
     wall_uri_type = "-dark" if is_dark else ""
     wall_path = get_setting("picture-uri" + wall_uri_type, "org.gnome.desktop.background").lstrip("file://")
-    
+    wall_path = "/" + urllib.parse.unquote(wall_path)
+    # If gnome accent color changed
     if accent_color_applied:
         accent = get_setting("accent-color", "org.gnome.desktop.interface")
         accent_color = COLORS[ACCENT_TO_COLOR[accent]]
@@ -148,11 +168,17 @@ def apply_theme(accent_color_applied = False):
 
     # Generate theme
     if accent_color_enabled:
-        theme = themeFromSourceColor(int(accent_color))
+        if MU_BACKEND:
+            theme = theme_from_color_2(accent_color)
+        else:
+            theme = themeFromSourceColor(int(accent_color))
         if accent_color in COLOR_TO_ACCENT and not accent_color_applied:
             set_setting("accent-color", COLOR_TO_ACCENT[accent_color], 'org.gnome.desktop.interface')
     else:
-        theme = themeFromImage(Image.open(wall_path))
+        if MU_BACKEND:
+            theme = theme_from_image_2(Image.open(wall_path), int(width), int(height))
+        else:
+            theme = themeFromImage(Image.open(wall_path))
     
     # Map colors
     cmfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "color_mappings.json")
