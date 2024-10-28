@@ -39,7 +39,6 @@ def main():
         theme = generated
     else:
         theme = themeFromSourceColor(argb)
-    print(theme["schemes"]["dark"].props)
     scheme = args.scheme
     variant = args.variant if args.variant else "default"
 

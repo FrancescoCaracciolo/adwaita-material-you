@@ -7,6 +7,7 @@ from color_utils import ColorUtils
 from material_color_utilities_python.utils.theme_utils import *
 from PIL import Image
 import urllib.parse
+import shutil
 
 MU_BACKEND = True
 ARCMENU_UUID = "arcmenu@arcmenu.com"
@@ -129,7 +130,6 @@ def apply_gtk_theme(base_preset):
     f.close()
  
 def theme_from_color_2(accent_color, isdark):
-    print(hexFromArgb(accent_color))
     from materialyoucolor.scheme import Scheme
     if isdark:
         sch = Scheme.dark(int(accent_color)).__dict__["props"]
@@ -139,8 +139,6 @@ def theme_from_color_2(accent_color, isdark):
     for key, color in sch.items():
         generated[key] = ColorUtils.argb_from_argb_arr(color[0], color[1], color[2], color[3])
     theme = {"schemes": {"dark": Scheme(generated), "light": Scheme(generated)}}
-    for name, color in theme["schemes"]["light"].props.items():
-        print(name + ": " + hexFromArgb(color))
     return theme
 
 def theme_from_image_2(image, w, h, isdark):
@@ -150,14 +148,24 @@ def theme_from_image_2(image, w, h, isdark):
     result = QuantizeCelebi(list(image.getdata()), 128)
     return theme_from_color_2(Score.score(result)[0], isdark)
 
-def apply_gnome_theme(base_preset):
-    # Generate gnome shell theme 
-    modify_colors(expanduser(EXTENSIONDIR + "/shell/" + str(VERSION) + "/gnome-shell-sass/_colors.txt"), expanduser(EXTENSIONDIR + "/shell/" + str(VERSION) + "/gnome-shell-sass/_colors.scss"), base_preset["variables"])
-    modify_colors(expanduser(EXTENSIONDIR + "/shell/" + str(VERSION) + "/gnome-shell-sass/_default-colors.txt"), expanduser(EXTENSIONDIR + "/shell/" + str(VERSION) + "/gnome-shell-sass/_default-colors.scss"), base_preset["variables"])
-    if not os.path.exists(expanduser("~/.local/share/themes/MaterialYou")):
-        os.makedirs(expanduser("~/.local/share/themes/MaterialYou"))
-        os.makedirs(expanduser("~/.local/share/themes/MaterialYou/gnome-shell"))
-    compile_sass(expanduser(EXTENSIONDIR+ "/shell/" + str(VERSION) + "/gnome-shell.scss"), expanduser("~/.local/share/themes/MaterialYou/gnome-shell/gnome-shell.css"))
+def apply_gnome_theme(base_preset, isdark = True):
+
+    theme_path = expanduser("~/.local/share/themes/MaterialYou")
+    if not os.path.exists(theme_path):
+        os.mkdir(theme_path)
+        os.mkdir(theme_path + "/gnome-shell")
+    if not isdark:
+        path = expanduser(EXTENSIONDIR + "/shell/" + str(VERSION) + "/compiled_shell_light.scss")
+    else:
+        path = expanduser(EXTENSIONDIR + "/shell/" + str(VERSION) + "/compiled_shell_dark.scss")
+    f = open(path, "r")
+    content = f.read()
+    content = content.replace("-st-accent-color", base_preset["variables"]["accent_bg_color"]).replace("-st-accent-fg-color", base_preset["variables"]["accent_fg_color"])
+    theme_path = expanduser("~/.local/share/themes/MaterialYou/gnome-shell/gnome-shell.css")
+    shutil.copyfile(path + ".map", theme_path + ".map")
+    f = open(theme_path, "w+")
+    f.write(content)
+    f.close()
     set_setting("name", "reset", "org.gnome.shell.extensions.user-theme")
 
 def apply_theme(accent_color_applied = False):
@@ -214,10 +222,9 @@ def apply_theme(accent_color_applied = False):
     variant = color_scheme.lower()
     scheme = "light" if not is_dark else "dark"
     base_preset = map_colors(color_mappings[variant][scheme], base_presets[scheme], theme["schemes"][scheme].props)
-    print(base_preset)
 
     threading.Thread(target=apply_gtk_theme, args=(base_preset, )).start()
-    threading.Thread(target=apply_gnome_theme, args=(base_preset, )).start() 
+    threading.Thread(target=apply_gnome_theme, args=(base_preset, is_dark,)).start() 
     if enable_arcmenu_theming:
         threading.Thread(target=change_arcmenu_theme, args=(base_preset["variables"],)).start()
     if enable_pywal_theming:
