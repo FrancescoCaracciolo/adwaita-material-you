@@ -192,7 +192,7 @@ def apply_theme(accent_color_applied = False):
         set_setting("accent-color", accent_color, EXTENSION_SCHEMA, uuid=EXTENSION_UUID)
 
     # Generate theme
-    if accent_color_enabled:
+    if accent_color_enabled or accent_color_applied:
         if MU_BACKEND:
             theme = theme_from_color_2(accent_color, is_dark)
         else:
