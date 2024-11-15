@@ -190,7 +190,8 @@ def apply_theme(accent_color_applied = False):
     if accent_color_applied:
         accent = get_setting("accent-color", "org.gnome.desktop.interface")
         accent_color = COLORS[ACCENT_TO_COLOR[accent]]
-        set_setting("accent-color-lock", "true", EXTENSION_SCHEMA, uuid=EXTENSION_UUID)
+        if accent_color_enabled:
+            set_setting("accent-color-lock", "true", EXTENSION_SCHEMA, uuid=EXTENSION_UUID)
         set_setting("accent-color", accent_color, EXTENSION_SCHEMA, uuid=EXTENSION_UUID)
 
     # Generate theme
