@@ -63,7 +63,8 @@ def main():
     
 
     # Generate theme
-    base_preset = map_colors.map_colors(color_mappings[variant][scheme], base_presets[scheme], theme["schemes"][scheme].props)
+    print(theme)
+    base_preset = map_colors.map_colors(color_mappings[variant][scheme], base_presets[scheme], theme)
     # Generate css
     css = ""
     for key in base_preset["variables"]:
