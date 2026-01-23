@@ -42,8 +42,9 @@ def main():
     scheme = args.scheme
     variant = args.variant if args.variant else "default"
 
-    cmfile = os.path.expanduser(args.mappings) if args.mappings else os.path.join(os.path.dirname(os.path.abspath(__file__)), "color_mappings.json")
-    bpfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "base_presets.json")
+    lib_dir = "/usr/lib/adwaita-material-you"
+    cmfile = os.path.expanduser(args.mappings) if args.mappings else os.path.join(lib_dir, "color_mappings.json")
+    bpfile = os.path.join(lib_dir, "base_presets.json")
     
     # Handle erorrs
     if args.scheme not in ["dark", "light"]:
