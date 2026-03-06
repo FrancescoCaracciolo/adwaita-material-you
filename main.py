@@ -4,6 +4,7 @@ import json, os
 import map_colors
 import argparse
 from materialyoucolor.scheme import Scheme
+from material_color_utilities_python.utils import color_utils
 
 MU_BACKEND = True
 def main():
@@ -34,7 +35,8 @@ def main():
     if MU_BACKEND:
         sch = Scheme.dark(argb).__dict__["props"]
         generated = {}
-        for key, color in sch.items():
+        for key, color in sch.items(): 
+            color = [color_utils.redFromArgb(color), color_utils.greenFromArgb(color), color_utils.blueFromArgb(color), color_utils.alphaFromArgb(color)] 
             generated[key] = ColorUtils.argb_from_argb_arr(color[0], color[1], color[2], color[3])
         theme = generated
     else:
