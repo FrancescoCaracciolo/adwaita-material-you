@@ -15,7 +15,15 @@ ARCMENU_SCHEMA = "org.gnome.shell.extensions.arcmenu"
 EXTENSION_UUID = "material-you-colors@francescocaracciolo.github.io"
 EXTENSIONDIR = "~/.local/share/gnome-shell/extensions/" + EXTENSION_UUID
 EXTENSION_SCHEMA = "org.gnome.shell.extensions.material-you-colors"
-VERSION = 49
+def get_gnome_version():
+    try:
+        result = subprocess.check_output(["gnome-shell", "--version"])
+        version = result.decode("utf-8").strip().split()[-1]
+        return int(version.split(".")[0])
+    except Exception:
+        return 49
+
+VERSION = get_gnome_version()
 
 COLOR_TO_ACCENT = {
   0xffbc9769: "orange",
