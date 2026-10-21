@@ -5,6 +5,7 @@ import map_colors
 import argparse
 from materialyoucolor.scheme import Scheme
 from material_color_utilities_python.utils import color_utils
+from theme_runtime import apply_live_gtk_theme, render_css
 
 MU_BACKEND = True
 def main():
@@ -69,12 +70,7 @@ def main():
     print(theme)
     base_preset = map_colors.map_colors(color_mappings[variant][scheme], base_presets[scheme], theme)
     # Generate css
-    css = ""
-    for key in base_preset["variables"]:
-        css +=  "@define-color " + key + " " + base_preset["variables"][key] + ";\n"
-    for prefix_key in base_preset["palette"]:
-        for key_2 in base_preset["palette"][prefix_key]:
-            css += "@define-color " + prefix_key + key_2 + " " + base_preset["palette"][prefix_key][key_2] + ";\n"
+    css = render_css(base_preset)
 
     if args.output:
         f = open(os.path.expanduser(args.output), "w+")
@@ -82,13 +78,12 @@ def main():
         f.close()
         print("Theme saved to file")
     if args.apply:
-        f = open(os.path.expanduser("~/.config/gtk-4.0/gtk.css"), "w+")
-        f.write(css)
-        f.close()
-        f = open(os.path.expanduser("~/.config/gtk-3.0/gtk.css"), "w+")
-        f.write(css)
-        f.close()
+        reloaded = apply_live_gtk_theme(base_preset)
         print("Theme applied")
+        if reloaded:
+            print("Running GTK applications notified to reload their stylesheets")
+        else:
+            print("GTK stylesheets written; live reload notification unavailable")
 
 if __name__ == "__main__":
     main()

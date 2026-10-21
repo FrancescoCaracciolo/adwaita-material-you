@@ -8,6 +8,7 @@ from material_color_utilities_python.utils.theme_utils import *
 from PIL import Image
 import urllib.parse
 import shutil
+from theme_runtime import apply_live_gtk_theme
 
 MU_BACKEND = True
 ARCMENU_UUID = "arcmenu@arcmenu.com"
@@ -120,20 +121,12 @@ def change_arcmenu_theme(vars):
     set_setting("menu-item-hover-fg-color", "\\" + vars["accent_fg_color"], ARCMENU_SCHEMA, uuid=ARCMENU_UUID)
 
 def apply_gtk_theme(base_preset):
-    # Generate css
-    css = ""
-    for key in base_preset["variables"]:
-        css +=  "@define-color " + key + " " + base_preset["variables"][key] + ";\n"
-    for prefix_key in base_preset["palette"]:
-        for key_2 in base_preset["palette"][prefix_key]:
-            css += "@define-color " + prefix_key + key_2 + " " + base_preset["palette"][prefix_key][key_2] + ";\n"
-    f = open(os.path.expanduser("~/.config/gtk-4.0/gtk.css"), "w+")
-    f.write(css)
-    f.close()
-    f = open(os.path.expanduser("~/.config/gtk-3.0/gtk.css"), "w+")
-    f.write(css)
-    f.close()
+    reloaded = apply_live_gtk_theme(base_preset)
     print("Theme applied")
+    if reloaded:
+        print("Running GTK applications notified to reload their stylesheets")
+    else:
+        print("GTK stylesheets written; live reload notification unavailable")
     f = open(os.path.expanduser("~/.config/gtk-4.0/.materialyou"), "w+")
     f.write("yes")
     f.close()

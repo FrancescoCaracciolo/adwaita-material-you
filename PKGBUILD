@@ -14,6 +14,7 @@ package() {
     cd "$pkgname"
 
     install -Dm755 main.py "$pkgdir/usr/lib/adwaita-material-you/main.py"
+    install -Dm644 theme_runtime.py "$pkgdir/usr/lib/adwaita-material-you/theme_runtime.py"
 
     for pyfile in color_utils.py map_colors.py transformers.py extension_integration.py; do
         install -Dm644 "$pyfile" "$pkgdir/usr/lib/adwaita-material-you/$pyfile"

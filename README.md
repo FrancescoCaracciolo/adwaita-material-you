@@ -80,4 +80,21 @@ adwmu dark -w /path/to/wallpaper.jpg -V vibrant -o ~/.config/gtk-4.0/custom-gtk.
 Generate a muted light theme with custom color mappings:
 ```bash
 adwmu light -c "#3498DB" -V muted -m /path/to/custom-mappings.json
-```  
+```
+
+## Live application
+
+Using `--apply` writes the generated colors to `custom-accent.css` for both
+GTK 3 and GTK 4 and adds an import to each user `gtk.css` without replacing
+the rest of that file. The command then performs the same high-contrast
+setting refresh used by ChromaLeon so running GTK applications can reload the
+stylesheet without restarting them:
+
+```bash
+adwmu dark -c "#FF5733" --apply
+```
+
+The refresh is best-effort. If `gsettings` is unavailable, the files are
+still updated and newly launched applications will use the new colors. Some
+applications can choose to keep their own style cache and may still need to
+be reopened.
