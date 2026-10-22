@@ -142,7 +142,7 @@ def theme_from_color_2(accent_color, isdark):
     for key, color in sch.items():
         color = [color_utils.redFromArgb(color), color_utils.greenFromArgb(color), color_utils.blueFromArgb(color), color_utils.alphaFromArgb(color)] 
         generated[key] = ColorUtils.argb_from_argb_arr(color[0], color[1], color[2], color[3])
-    theme = {"schemes": {"dark": Scheme(generated), "light": Scheme(generated)}}
+    theme = {"schemes": {"dark": Scheme(generated), "light": Scheme(generated)}, "source": int(accent_color)}
     return theme
 
 def theme_from_image_2(image, w, h, isdark):
@@ -151,6 +151,14 @@ def theme_from_image_2(image, w, h, isdark):
     image.resize(calculate_optimal_size(image.height, image.width, 128), Image.Resampling.BICUBIC)
     result = QuantizeCelebi(list(image.getdata()), 128)
     return theme_from_color_2(Score.score(result)[0], isdark)
+
+def apply_qt_theme_safe(source_argb, scheme, variant):
+    try:
+        from qt_theme import apply_qt_theme
+        for line in apply_qt_theme(source_argb, scheme, variant, targets="kde,qt6ct,qt5ct,kvantum"):
+            print(line)
+    except Exception as e:
+        print("Qt theming failed:", e)
 
 def apply_gnome_theme(base_preset, isdark = True):
 
@@ -183,6 +191,7 @@ def apply_theme(accent_color_applied = False):
     width = get_ext_settings("resize-width")
     enable_pywal_theming = parse_bool(get_ext_settings("enable-pywal-theming"))
     enable_arcmenu_theming = parse_bool(get_ext_settings("arcmenu-theming"))
+    enable_qt_theming = parse_bool(get_ext_settings("qt-theming"))
     dark_pref = get_setting("color-scheme", "org.gnome.desktop.interface")
     is_dark = dark_pref == "prefer-dark"
 
@@ -233,6 +242,8 @@ def apply_theme(accent_color_applied = False):
     threading.Thread(target=apply_gnome_theme, args=(base_preset, is_dark,)).start() 
     if enable_arcmenu_theming:
         threading.Thread(target=change_arcmenu_theme, args=(base_preset["variables"],)).start()
+    if enable_qt_theming and "source" in theme:
+        threading.Thread(target=apply_qt_theme_safe, args=(theme["source"], scheme, variant)).start()
     if enable_pywal_theming:
         generate_pywal(base_preset["variables"]["window_bg_color"], wall_path, is_dark)
     if extra_command:
