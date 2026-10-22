@@ -5,7 +5,7 @@ cd "$(dirname "$0")"
 sudo install -Dm755 main.py "/usr/lib/adwaita-material-you/main.py"
 sudo install -Dm644 theme_runtime.py "/usr/lib/adwaita-material-you/theme_runtime.py"
 
-for pyfile in color_utils.py map_colors.py transformers.py extension_integration.py; do
+for pyfile in color_utils.py map_colors.py transformers.py extension_integration.py qt_theme.py; do
     sudo install -Dm644 "$pyfile" "/usr/lib/adwaita-material-you/$pyfile"
 done
 

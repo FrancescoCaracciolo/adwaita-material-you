@@ -423,6 +423,42 @@ def _update_ini_file(path: Path, updates: Mapping[str, Mapping[str, str]]) -> No
     path.write_text(set_ini_values(current, updates), encoding="utf-8")
 
 
+def notify_kconfig_changed(
+    name: str, changes: Mapping[str, Mapping[str, str]]
+) -> bool:
+    """Tell running KDE applications that a KConfig file changed.
+
+    This is the signal KConfig itself emits when it saves, and the one
+    KConfigWatcher listens for.  Editing the file directly sends nothing, so
+    without it Kirigami and KDE applications only see new colors on restart.
+    Returns False when the session bus is not reachable.
+    """
+
+    try:
+        import gi
+
+        gi.require_version("Gio", "2.0")
+        from gi.repository import Gio, GLib
+
+        # Nested groups such as "Colors:Header][Inactive" are joined with 0x1d.
+        payload = {
+            "\x1d".join(section.split("][")): [key.encode() for key in items]
+            for section, items in changes.items()
+        }
+        bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        bus.emit_signal(
+            None,
+            f"/{name}",
+            "org.kde.kconfig.notify",
+            "ConfigChanged",
+            GLib.Variant("(a{saay})", (payload,)),
+        )
+        bus.flush_sync(None)
+        return True
+    except Exception:
+        return False
+
+
 def _config_home() -> Path:
     return Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config")
 
@@ -497,7 +533,9 @@ def _apply_kde(sets: Mapping[str, Mapping[str, str]], apply: bool) -> str:
     updates = {section: dict(items) for section, items in sets.items()}
     updates["General"] = {"ColorScheme": name}
     _update_ini_file(kdeglobals, updates)
-    return f"kde: scheme written to {main_file} and merged into {kdeglobals}"
+    notified = notify_kconfig_changed("kdeglobals", updates)
+    suffix = "; KConfig change signal sent" if notified else ""
+    return f"kde: scheme written to {main_file} and merged into {kdeglobals}{suffix}"
 
 
 def _apply_qtct(
