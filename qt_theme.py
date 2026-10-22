@@ -412,15 +412,20 @@ def set_ini_values(text: str, updates: Mapping[str, Mapping[str, str]]) -> str:
 
 
 def _update_ini_file(path: Path, updates: Mapping[str, Mapping[str, str]]) -> None:
-    """Rewrite a settings file in place.
+    """Update a settings file by replacing it atomically.
 
-    Qt and KDE watch these files for modification; a rename would drop their
-    inotify watch, so the file is truncated and rewritten instead.
+    qt5ct and qt6ct watch their config directory, which only reports a change
+    when a file is created or renamed in it, not when a file is edited in
+    place.  Replacing the file is what makes running applications reload.
     """
 
     path.parent.mkdir(parents=True, exist_ok=True)
-    current = path.read_text(encoding="utf-8") if path.exists() else ""
-    path.write_text(set_ini_values(current, updates), encoding="utf-8")
+    exists = path.exists()
+    current = path.read_text(encoding="utf-8") if exists else ""
+    mode = path.stat().st_mode & 0o7777 if exists else None
+    atomic_write(path, set_ini_values(current, updates))
+    if mode is not None:
+        path.chmod(mode)
 
 
 def notify_kconfig_changed(
@@ -428,10 +433,10 @@ def notify_kconfig_changed(
 ) -> bool:
     """Tell running KDE applications that a KConfig file changed.
 
-    This is the signal KConfig itself emits when it saves, and the one
-    KConfigWatcher listens for.  Editing the file directly sends nothing, so
-    without it Kirigami and KDE applications only see new colors on restart.
-    Returns False when the session bus is not reachable.
+    This is the signal KConfig emits when it saves.  KConfigWatcher reacts by
+    reparsing its cached copy of the file; without that, Kirigami keeps the old
+    colors even when it refreshes them on the next palette change (which
+    qt5ct/qt6ct trigger).  Returns False when the session bus is not reachable.
     """
 
     try:

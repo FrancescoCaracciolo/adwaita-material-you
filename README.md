@@ -116,8 +116,15 @@ Each target is written as follows. Paths honor `XDG_CONFIG_HOME` and `XDG_DATA_H
 | `kvantum` | `~/.config/Kvantum/AdwaitaMaterialYou/` | Selects the theme in `kvantum.kvconfig`. The theme is an installed Kvantum theme recolored with Material You colors. When Kvantum is selected, `qt5ct`/`qt6ct` also get `style=kvantum` (`kvantum-dark` for dark) |
 
 For qt5ct and qt6ct, set `QT_QPA_PLATFORMTHEME=qt5ct` or `qt6ct` in your session
-so Qt applications read those settings. Already running applications may need a
-restart to pick up the new colors.
+so Qt applications read those settings. Running applications that use qt5ct or
+qt6ct reload the palette when the theme changes, as long as the `style` in
+`qt5ct.conf`/`qt6ct.conf` is not a Kvantum style. Kvantum sets the application
+palette itself and only reads its theme when the application starts, so with
+the `kvantum` target applications must be restarted. Kirigami applications
+(such as KDE Connect) take their colors from `kdeglobals`: outside Plasma they
+update live when both the `kde` and the `qt5ct`/`qt6ct` targets are used, since
+the `kde` target sends the KConfig change signal and the qt5ct/qt6ct palette
+change makes them read the colors again.
 
 Other settings in those files are kept. Without `--qt`, no Qt file is touched.
 

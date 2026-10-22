@@ -155,7 +155,7 @@ def theme_from_image_2(image, w, h, isdark):
 def apply_qt_theme_safe(source_argb, scheme, variant):
     try:
         from qt_theme import apply_qt_theme
-        for line in apply_qt_theme(source_argb, scheme, variant, targets="kde,qt6ct,qt5ct,kvantum"):
+        for line in apply_qt_theme(source_argb, scheme, variant, targets="kde,qt6ct,qt5ct"):
             print(line)
     except Exception as e:
         print("Qt theming failed:", e)
