@@ -44,7 +44,7 @@ def render_css(base_preset: Mapping[str, object]) -> str:
     return "\n".join(lines) + ("\n" if lines else "")
 
 
-def _atomic_write(path: Path, content: str) -> None:
+def atomic_write(path: Path, content: str) -> None:
     """Replace a file atomically, keeping partial CSS out of GTK reads."""
 
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -76,7 +76,7 @@ def _install_import(gtk_css: Path) -> None:
     updated = f"{without_ours}\n\n{block}" if without_ours else block
 
     if updated != current:
-        _atomic_write(gtk_css, updated)
+        atomic_write(gtk_css, updated)
 
 
 def _gsettings(*args: str, capture_output: bool = False) -> subprocess.CompletedProcess[str]:
@@ -143,7 +143,7 @@ def apply_live_gtk_theme(
 
     for version in GTK_VERSIONS:
         version_dir = root / version
-        _atomic_write(version_dir / "custom-accent.css", css)
+        atomic_write(version_dir / "custom-accent.css", css)
         _install_import(version_dir / "gtk.css")
 
     return reload_gtk_stylesheets() if reload else False

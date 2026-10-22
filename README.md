@@ -60,6 +60,17 @@ adwmu <scheme> [options]
 
 **Note**: You must specify either `--color` or `--wallpaper`.
 
+### Qt options
+
+- `-q, --qt`: Generate and apply a Qt theme with the same colors as [kde-material-you-colors](https://github.com/luisbocanegra/kde-material-you-colors)
+- `--qt-targets LIST`: Comma separated targets: `kde`, `qt5ct`, `qt6ct`, `kvantum`. Use `all` for every target, or `auto` (default) for the ones detected on your system
+- `--qt-no-apply`: Only write the Qt theme files, without selecting them in the Qt settings
+- `--qt-kvantum-base THEME`: Installed Kvantum theme to recolor (default: `KvAdaptaDark` for dark, `KvAdapta` for light)
+- `--qt-contrast-level FLOAT`: General contrast level from -1 to 1 (default 0)
+- `--qt-frame-contrast FLOAT`: Frames and outlines contrast from 0 to 1 (default 0.2)
+- `--qt-chroma-multiplier FLOAT`: Colorfulness of the Qt theme from 0 to 10 (default 1)
+- `--qt-tone-multiplier FLOAT`: Brightness of the Qt theme backgrounds from 0 to 1.5 (default 1)
+
 ### Examples
 
 Generate a dark theme based on a color:
@@ -81,6 +92,34 @@ Generate a muted light theme with custom color mappings:
 ```bash
 adwmu light -c "#3498DB" -V muted -m /path/to/custom-mappings.json
 ```
+
+## Qt theming
+
+Generate a dark Qt theme from a color and apply it to every detected target:
+
+```bash
+adwmu dark -c "#FF5733" --qt
+```
+
+Only qt6ct and Kvantum, from a wallpaper, with a vibrant variant:
+
+```bash
+adwmu light -w /path/to/wallpaper.png -V vibrant --qt --qt-targets qt6ct,kvantum
+```
+
+Each target is written as follows. Paths honor `XDG_CONFIG_HOME` and `XDG_DATA_HOME`.
+
+| Target | Files | What `--qt` changes |
+| --- | --- | --- |
+| `kde` | `~/.local/share/color-schemes/AdwaitaMaterialYou{Dark,Light}.colors` | Applies the scheme with `plasma-apply-colorscheme`. Without Plasma, merges the colors into `~/.config/kdeglobals` so KDE applications use them |
+| `qt5ct`, `qt6ct` | `~/.config/qt{5,6}ct/colors/AdwaitaMaterialYou.conf` | Sets `color_scheme_path` and `custom_palette=true` in the `[Appearance]` section of `qt{5,6}ct.conf` |
+| `kvantum` | `~/.config/Kvantum/AdwaitaMaterialYou/` | Selects the theme in `kvantum.kvconfig`. The theme is an installed Kvantum theme recolored with Material You colors. When Kvantum is selected, `qt5ct`/`qt6ct` also get `style=kvantum` (`kvantum-dark` for dark) |
+
+For qt5ct and qt6ct, set `QT_QPA_PLATFORMTHEME=qt5ct` or `qt6ct` in your session
+so Qt applications read those settings. Already running applications may need a
+restart to pick up the new colors.
+
+Other settings in those files are kept. Without `--qt`, no Qt file is touched.
 
 ## Live application
 
