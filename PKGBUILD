@@ -1,7 +1,7 @@
 pkgname=adwaita-material-you
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
-pkgdesc="Generate and apply GTK4 themes based on a color or an image"
+pkgdesc="Generate and apply GTK4 themes and QT/Kirigami themes based on a color or an image"
 arch=('any')
 url="https://github.com/francescocaracciolo/adwaita-material-you"
 license=('GPL')
